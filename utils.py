@@ -12,13 +12,13 @@ def extract_notes(path):
 
 
 class MidiDataset(Dataset):
-    def __init__(self, dataset_path, train_test_val='train'):
+    def __init__(self, dataset_path, opt='train'):
         import os
 
         self.data = []
         to_tensor = transforms.ToTensor()
         df = pd.read_csv(os.path.join(dataset_path, 'info.csv'))
-        df = df.loc[df.split == train_test_val, :]
+        df = df.loc[df.split == opt, :]
         for mid_path, label in zip(df.midi_filename, df.style):
             notes = extract_notes(os.path.join(dataset_path, mid_path))
             self.data.append((to_tensor(notes), label))
@@ -31,6 +31,6 @@ class MidiDataset(Dataset):
 
 
 def load_data(dataset_path, num_workers=0, batch_size=512):
-    dataset = MidiDataset(dataset_path)
+    dataset = MidiDataset(dataset_path, opt='train')
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=False)
 
