@@ -14,7 +14,7 @@ class MIO:
     return self
 
    def extract_unit_notes(self, time_signature, bpm):
-    unit_duration = 60*int(time_signature[0])/bpm
+    unit_duration = 4*60*int(time_signature[0])/bpm
     self.unit_notes = torch.tensor([[note.start, note.end, note.pitch, note.velocity] for note in self.notes if note[0] <= unit_duration])
     return self
 
