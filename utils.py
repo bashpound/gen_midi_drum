@@ -39,5 +39,3 @@ class MidiDataset(Dataset):
 def load_data(dataset_path, num_workers=0, batch_size=512, opt='train'):
     dataset = MidiDataset(dataset_path, opt=opt)
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=False)
-
-

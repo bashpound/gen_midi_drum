@@ -19,7 +19,7 @@ class HierarchicalDecoder(torch.nn.Module):
     def __init__(self, z_dim=512,
                  hidden_dim = 1024,
                  condoctor_output_dim=512,
-                 output_dim=16,
+                 output_dim=32,
                  num_layers=2,
                  U=16):
         super().__init__()
@@ -36,9 +36,10 @@ class HierarchicalDecoder(torch.nn.Module):
         self.conductor_lstm = torch.nn.LSTM(condoctor_output_dim, condoctor_output_dim, num_layers=num_layers, batch_first=True)
         self.decoder_lstm = torch.nn.LSTM(condoctor_output_dim, hidden_dim, num_layers=num_layers, batch_first=True)
         self.output_layer = torch.nn.Sequential(*[
-            torch.nn.Linear(hidden_dim, output_dim),
+            torch.nn.Linear(hidden_dim, output_dim*4//U),
             torch.nn.Softmax(0)
         ])
+        self.activation = torch.nn.Softmax(1)
 
     def forward(self, z):
         batch_size = z.shape[0]
@@ -58,8 +59,7 @@ class HierarchicalDecoder(torch.nn.Module):
           outputs.append(subseq_out)
         
         outputs = torch.cat(outputs, dim=1)
-        
-        return outputs
+        return outputs.reshape(outputs.shape[0], -1, 4)
 
 class MusicVAE(torch.nn.Module):
     def __init__(self):
@@ -70,8 +70,7 @@ class MusicVAE(torch.nn.Module):
     def forward(self, x):
       mu, log_var = self.encoder(x)
       z = mu + torch.randn_like(log_var) * log_var
-      z = self.decoder(z)
-      return z, mu, log_var
+      return self.decoder(z), z
     
 
 def save_model(model):
