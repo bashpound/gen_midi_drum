@@ -18,7 +18,7 @@ def kl_divergence(mu, logvar):
 
 def train(args):
     from os import path
-    dataset_path = './data/groove'
+    dataset_path = '/content/groove'
     try:
         model = load_model()
     except:
