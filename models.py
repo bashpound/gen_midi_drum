@@ -36,8 +36,8 @@ class HierarchicalDecoder(torch.nn.Module):
         self.conductor_lstm = torch.nn.LSTM(condoctor_output_dim, condoctor_output_dim, num_layers=num_layers, batch_first=True)
         self.decoder_lstm = torch.nn.LSTM(condoctor_output_dim, hidden_dim, num_layers=num_layers, batch_first=True)
         self.output_layer = torch.nn.Sequential(*[
+            torch.nn.Softmax(0),
             torch.nn.Linear(hidden_dim, output_dim*4//U),
-            torch.nn.Softmax(0)
         ])
         self.activation = torch.nn.Softmax(1)
 
@@ -70,7 +70,7 @@ class MusicVAE(torch.nn.Module):
     def forward(self, x):
       mu, log_var = self.encoder(x)
       z = mu + torch.randn_like(log_var) * log_var
-      return self.decoder(z), z
+      return self.decoder(z), mu, log_var
     
 
 def save_model(model):
