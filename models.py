@@ -82,7 +82,7 @@ class MusicVAE(torch.nn.Module):
       z = mu + torch.randn_like(log_var) * log_var
       return self.decoder(z), mu, log_var
     
-
+fpath = '/content'
 def save_model(model):
     from torch import save
     from os import path
