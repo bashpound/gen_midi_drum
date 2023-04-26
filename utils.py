@@ -46,13 +46,26 @@ class MidiDataset(Dataset):
         return self.data[idx]
 
 #sequence note로부터 midi를 생성하는 함수
-def make_midi(sequence_note, fpath):
+def make_midi(prob_matrix, fpath):
   midi_data = pretty_midi.PrettyMIDI()
 
+  #output tensor를 binary 확률분포로 가정하고 이진화
+  sequence_note = torch.distributions.Bernoulli(prob_matrix).sample().detach().numpy()
+  
+
   instrument = pretty_midi.Instrument(program=0, is_drum=True) 
-  for start, end, pitch, velocity in sequence_note:
-    note = pretty_midi.Note(velocity=int(velocity), pitch=int(pitch), start=start, end=end)
-    instrument.notes.append(note)
+  interval = 8/64
+
+  for idx, (start, end, pitch, velocity) in enumerate(sequence_note):
+    idx = idx*interval
+    if start == 1:
+       start = idx
+       end = start+0.1
+       pitch = 38 if pitch == 1 else 36
+       velocity = 100 if velocity == 1 else 50
+       
+       note = pretty_midi.Note(velocity=int(velocity), pitch=int(pitch), start=start, end=end)
+       instrument.notes.append(note)
 
   midi_data.instruments.append(instrument)
   midi_data.write(fpath)

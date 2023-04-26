@@ -28,7 +28,7 @@ class HierarchicalDecoder(torch.nn.Module):
         super().__init__()
         self.U  = U
         self.fc0 = torch.nn.Sequential(*[
-            torch.nn.Linear(z_dim//U, condoctor_output_dim),
+            torch.nn.Linear(condoctor_output_dim, condoctor_output_dim),
             torch.nn.Tanh()
         ])
         self.fc1 = torch.nn.Sequential(*[
@@ -36,13 +36,13 @@ class HierarchicalDecoder(torch.nn.Module):
             torch.nn.Tanh()
         ])
 
-        self.conductor_lstm = torch.nn.LSTM(condoctor_output_dim, condoctor_output_dim, num_layers=num_layers, batch_first=True)
+        self.conductor_lstm = torch.nn.LSTM(z_dim//U, condoctor_output_dim, num_layers=num_layers, batch_first=True)
         self.decoder_lstm = torch.nn.LSTM(condoctor_output_dim, hidden_dim, num_layers=num_layers, batch_first=True)
         self.output_layer = torch.nn.Sequential(*[
-            torch.nn.Softmax(0),
-            torch.nn.Linear(hidden_dim, output_dim*4//U),
+            torch.nn.Linear(hidden_dim, output_dim*4//U)
         ])
-        self.activation = torch.nn.Softmax(1)
+        self.activation = torch.nn.Softmax(0)
+
 
     def forward(self, z):
         batch_size = z.shape[0]
@@ -52,22 +52,26 @@ class HierarchicalDecoder(torch.nn.Module):
         # U개의 세그먼트로 분해 후 각각 RNN 적용
         for i in range(self.U):
           
-          #conductor RNN
           subsequence = z[:, i, :]
-          subsequence = self.fc0(subsequence)
+
+          #conductor RNN
           subsequence, (h0, c0) = self.conductor_lstm(subsequence)
-          
+          subsequence = self.fc0(subsequence)
+
           #initial state for decoder
           h0 = self.fc1(h0)
           c0 = torch.zeros_like(h0)
           
-          #decoder RNN
           subseq_out, _ = self.decoder_lstm(subsequence, (h0, c0))
           subseq_out = self.output_layer(subseq_out)
+          subseq_out = self.activation(subseq_out)
           outputs.append(subseq_out)
         
+        #decoder RNN
         outputs = torch.cat(outputs, dim=1)
-        return outputs.reshape(outputs.shape[0], -1, 4)
+        outputs = outputs.reshape(outputs.shape[0], -1, 4)
+        return outputs
+    
 
 class MusicVAE(torch.nn.Module):
     def __init__(self):
@@ -88,7 +92,7 @@ def save_model(model):
     from os import path
     fpath = '/content/'
     if isinstance(model, MusicVAE):
-        return save(model.state_dict(), path.join(fpath), 'vae.th'))
+        return save(model.state_dict(), path.join(fpath), 'vae.th')
     raise ValueError("model type '%s' invalid "%str(type(model)))
 
 

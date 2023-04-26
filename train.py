@@ -33,11 +33,7 @@ def train(args):
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'))
     
-    #optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
-    #Adam에서 reconstruction loss의 descent가 제대로 이루어지지 않아, descent algorithm을 택하여 reconstruction loss의 descent를 강제
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate)
-
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     #scheduling
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=lr_decay_rate)
 
