@@ -1,6 +1,8 @@
 from models import save_model, load_model
 from utils import load_data
 import torch
+import torch.nn.functional as F
+
 import torch.utils.tensorboard as tb
 from models import MusicVAE
 from torch import optim
@@ -16,10 +18,6 @@ lr_decay_rate = 0.9999
 initial_kl_weight = 0.01
 max_kl_weight = 0.2
 kl_annealing_rate = 0.99999
-
-
-def kl_divergence(mu, logvar):
-    return -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
 def train(args):
     from os import path
@@ -49,20 +47,28 @@ def train(args):
     
     # 논문에서 지정한 loss function
     reconstruction_loss = torch.nn.CrossEntropyLoss()
+    sm = F.softmax
+
      
-    for epoch in range(int(args.epochs)):
+    for epoch in range(1):
         for batch, data in enumerate(train_data):
             optimizer.zero_grad()
+            out, mu, log_var= model(data)
+
+            z0 = sm(mu + torch.randn_like(log_var) * log_var, 0)
             
-            #forward
-            z, mu, log_var = model(data)
+            out, mu, log_var= model(data)
+            z1 = sm(mu + torch.randn_like(log_var) * log_var, 0)
+
+            kl_loss = F.kl_div(z0.log(), z1, reduction='batchmean')
 
             #loss annealed with Beta
-            recon_loss = reconstruction_loss(z, data)
-            kl_loss = kl_divergence(mu, log_var)
-            beta = min(max_kl_weight, initial_kl_weight * np.exp(epoch * kl_annealing_rate))
-            loss = recon_loss + beta * kl_loss
+            recon_loss = reconstruction_loss(sm(out, 1), sm(data, 1))
             
+            beta = min(max_kl_weight, initial_kl_weight * np.exp(epoch * kl_annealing_rate))
+            
+            loss = recon_loss + beta * kl_loss
+            print('kl_loss', kl_loss.item(), 'recon_loss', recon_loss.item(), 'beta', beta, 'loss', loss.item())
             #logging
             train_logger.add_scalar('train/kl_loss', kl_loss, global_step=gs)
             train_logger.add_scalar('train/recon_loss', recon_loss, global_step=gs)

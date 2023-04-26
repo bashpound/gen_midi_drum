@@ -12,13 +12,13 @@
 
 ## 학습(train.py)
 
-1. batch size는 instance 스펙을 고려, 256으로 진행 (논문 512)
+1. batch size는 instance 스펙을 고려, 32로 진행 (논문 512)
 2. (ISSUE) kl loss만 학습되고, reconstruction loss는 학습되지 않는 문제
 3. (ISSUE) 2의 reconstruction loss에서 기인한 gradient explode 문제
     - Dataset을 start, end, pitch, velocity 4 channel의 시퀀스 길이를 갖도록 transpose로 학습
     - CrossEntropy > MSELoss로 변경, activation layer 제거
     - 모델 혹은 reconstruction loss에 문제가 있는 것 같은데, 아직 해결하지 못했습니다.
-    - model output이 직접 sequence note를 만드는 방식이 문제가 있음을 인지하였지만 시간상 해결하지 못했습니다.
+    - model output이 sequence note를 직접 만드는 방식이 문제가 있음을 인지하였지만 시간상 해결하지 못했습니다.
 
 ## 생성(utils.make_midi)
 
