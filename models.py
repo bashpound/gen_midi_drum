@@ -9,7 +9,10 @@ class Encoder(torch.nn.Module):
 
     def forward(self, x):
         _, (h, _) = self.rnn(x)
+        #양방향 h vector stack
         h = torch.cat((h[-2], h[-1]), dim=1)
+        
+        #mu 와 sigma(log_var) 처리하여 latent space의 특성 반환
         mu = self.fc_mu(h)
         log_var = (self.fc_sigma(h)+1).log()
         return mu, log_var
@@ -45,15 +48,20 @@ class HierarchicalDecoder(torch.nn.Module):
         batch_size = z.shape[0]
         z = z.view(batch_size, self.U, -1)
         outputs = []
+
+        # U개의 세그먼트로 분해 후 각각 RNN 적용
         for i in range(self.U):
+          
+          #conductor RNN
           subsequence = z[:, i, :]
           subsequence = self.fc0(subsequence)
-          
           subsequence, (h0, c0) = self.conductor_lstm(subsequence)
           
+          #initial state for decoder
           h0 = self.fc1(h0)
           c0 = torch.zeros_like(h0)
           
+          #decoder RNN
           subseq_out, _ = self.decoder_lstm(subsequence, (h0, c0))
           subseq_out = self.output_layer(subseq_out)
           outputs.append(subseq_out)
@@ -69,6 +77,8 @@ class MusicVAE(torch.nn.Module):
 
     def forward(self, x):
       mu, log_var = self.encoder(x)
+
+      #N(0, I)의 분포를 가정하는 eps(noise)에 sigma를 곱하여 logit 생성 후 decode
       z = mu + torch.randn_like(log_var) * log_var
       return self.decoder(z), mu, log_var
     
@@ -76,8 +86,9 @@ class MusicVAE(torch.nn.Module):
 def save_model(model):
     from torch import save
     from os import path
+    fpath = '/content/'
     if isinstance(model, MusicVAE):
-        return save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), 'vae.th'))
+        return save(model.state_dict(), path.join(fpath), 'vae.th'))
     raise ValueError("model type '%s' invalid "%str(type(model)))
 
 
@@ -86,7 +97,7 @@ def load_model():
     from os import path
     r = MusicVAE()
     try:
-        r.load_state_dict(load(path.join(path.dirname(path.abspath(__file__)), 'vae.th'), map_location='cpu'))
+        r.load_state_dict(load(path.join(fpath, 'vae.th'), map_location='cpu'))
     except:
         return r
     return r
