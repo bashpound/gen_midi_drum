@@ -17,7 +17,7 @@
 
 ## 생성(utils.make_midi)
 
-1. 모델 output shape는 [batch_size, sequence_length, 4]이므로, [sequence_length, 4]에 해당하는 [start, end, pitch, velocity] 노트를 직접 생성
+1. 모델 output shape는 [batch_size, sequence_length, 4]이므로, [sequence_length, 4]에 해당하는 [start, end, pitch, velocity] 확률분포를 이진화
 2. 해당 노트를 직접 midi로 write 하는 함수 작성
 
 
